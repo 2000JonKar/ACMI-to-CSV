@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -13,29 +14,19 @@ namespace ACMI_to_CSV
             DirectoryInfo dir = new DirectoryInfo(@"G:\\My Drive\\DCS\\TacView\\Data");
             FileInfo[] Files = dir.GetFiles("*.acmi"); // Lagra de filer som slutar i .acmi
 
-            // Efter långa förhandlingar, lite vilja, en aning våld, och jävligt med vaselin fick jag äntligen ordning på denna foreach
+            // Loop through all files in dir directory and put them through TacView.exe to generate a more managable .csv
             foreach (FileInfo file in Files)
             {
-                string path = file.FullName;
-                int lines = File.ReadLines(path).Count();
-                string[] data = File.ReadAllLines(path);
-
-                // Välj varje linje från .acmi som "pratar" om robotar och kommer från BLUFOR.
-                var query = from line in data where line.Contains("Type=Weapon+Missile") && line.Contains("Color=Blue") select line;
-
-                // Skapa en ny lista som ska innehålla alla query resultat
-                List<string> acmi = new List<string>();
-
-                // Foreach för att lägga till varje rad till listan acmi
-                foreach(string line in query)
-                {
-                    acmi.Add(line);
-                    Console.WriteLine("{0}", line); // För att bekräfta att man faktiskt fått data så skriver vi ut varje rad
-                }
+                ProcessStartInfo start = new ProcessStartInfo();
+                start.Arguments = $"-Open:\"G:\\My Drive\\DCS\\TacView\\Data\\{file}\" -ExportFlightLog:\"G:\\My Drive\\DCS\\TacView\\Data\\CSV\\{file}.csv\" -Quiet –Quit";
+                start.FileName = "C:\\Program Files (x86)\\Tacview\\Tacview.exe";
                 
-                File.WriteAllLines($"G:\\My Drive\\DCS\\TacView\\Data\\CSV\\CSV_{file}.csv", acmi); // Skapa .csv fil för att importera till Google Sheets
-                Console.WriteLine(file.Name); // Skriv ut .acmi-filnamn för att bekräfta
+                using (Process proc = Process.Start(start))
+                {
+                    proc.WaitForExit();
+                }
             }
+            Console.WriteLine("End of process...");
             Console.ReadLine(); // Låt användare titta hur länge dom vill på resultaten
         }
     }
